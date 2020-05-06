@@ -6,9 +6,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shurcooL/githubv4"
+
 	"github.com/cli/cli/internal/ghrepo"
 	"github.com/shurcooL/githubv4"
 )
+
+type PullRequestReviewState int
+
+const (
+	ReviewApprove PullRequestReviewState = iota
+	ReviewRequestChanges
+	ReviewComment
+)
+
+type PullRequestReviewInput struct {
+	Body  string
+	State PullRequestReviewState
+}
 
 type PullRequestsPayload struct {
 	ViewerCreated   PullRequestAndTotalCount
@@ -591,6 +606,17 @@ func CreatePullRequest(client *Client, repo *Repository, params map[string]inter
 	}
 
 	return &result.CreatePullRequest.PullRequest, nil
+}
+
+func AddReview(client *Client, pr *PullRequest, input *PullRequestReviewInput) error {
+	var mutation struct {
+		AddPullRequestReview struct {
+			body          githubv4.String
+			event         githubv4.PullRequestReviewEvent
+			pullRequestID githubv4.ID
+		} `graphql: "addPullRequestReview(input:$input)"`
+	}
+	return nil
 }
 
 func PullRequestList(client *Client, vars map[string]interface{}, limit int) (*PullRequestAndTotalCount, error) {

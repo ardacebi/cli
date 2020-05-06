@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cli/cli/api"
 	"github.com/spf13/cobra"
 )
 
@@ -40,15 +41,46 @@ func stringsEqual(target string, ss ...string) bool {
 	return true
 }
 
-func oneEqual(target string, ss ...string) bool {
-	count := 0
-	for _, s := range ss {
-		if s == target {
-			count += 1
-		}
+func processReviewOpt(cmd *cobra.Command) (*api.PullRequestReviewInput, error) {
+	approveVal, err := cmd.Flags().GetString("approve")
+	if err != nil {
+		return nil, err
+	}
+	changesVal, err := cmd.Flags().GetString("request-changes")
+	if err != nil {
+		return nil, err
+	}
+	commentVal, err := cmd.Flags().GetString("comment")
+	if err != nil {
+		return nil, err
 	}
 
-	return count == 1
+	found := 0
+	var body string
+	var state api.PullRequestReviewState
+
+	if approveVal != noOptSigil {
+		found++
+		body = approveVal
+		state = api.ReviewApprove
+	} else if changesVal != noOptSigil {
+		found++
+		body = changesVal
+		state = api.ReviewRequestChanges
+	} else if commentVal != noOptSigil {
+		found++
+		body = commentVal
+		state = api.ReviewComment
+	}
+
+	if found != 1 {
+		return nil, errors.New("need exactly one of approve, request-changes, or comment")
+	}
+
+	return &api.PullRequestReviewInput{
+		Body:  body,
+		State: state,
+	}, nil
 }
 
 func prReview(cmd *cobra.Command, args []string) error {
@@ -84,30 +116,15 @@ func prReview(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not find pull request %d: %w", pr.Number, err)
 	}
 
-	// process PR action
-	approveVal, err := cmd.Flags().GetString("approve")
+	input, err := processReviewOpt(cmd)
 	if err != nil {
-		return err
-	}
-	requestChangesVal, err := cmd.Flags().GetString("request-changes")
-	if err != nil {
-		return err
-	}
-	commentVal, err := cmd.Flags().GetString("comment")
-	if err != nil {
-		return err
+		return fmt.Errorf("did not understand desired review action: %w", err)
 	}
 
-	validationErr := errors.New("need exactly one of approve, request-changes, or comment")
-	if stringsEqual(noOptSigil, approveVal, requestChangesVal, commentVal) {
-		return validationErr
+	err = api.AddReview(apiClient, pr, input)
+	if err != nil {
+		return fmt.Errorf("failed to create review: %w", err)
 	}
-
-	if !oneEqual(noOptSigil, approveVal, requestChangesVal, commentVal) {
-		return validationErr
-	}
-
-	// TODO process flags, make some decisions
 
 	return nil
 }
