@@ -13,18 +13,19 @@ const noOptSigil = "!HIDEOUS SIGIL!"
 func init() {
 	prCmd.AddCommand(prReviewCmd)
 
-	prCmd.Flags().StringP("approve", "a", "", "Approve pull request")
-	prCmd.Flags().StringP("request-changes", "r", "", "Request changes on a pull request")
-	prCmd.Flags().StringP("comment", "c", "", "Comment on a pull request")
+	prReviewCmd.Flags().StringP("approve", "a", "", "Approve pull request")
+	prReviewCmd.Flags().StringP("request-changes", "r", "", "Request changes on a pull request")
+	prReviewCmd.Flags().StringP("comment", "c", "", "Comment on a pull request")
 
-	prCmd.Flags().Lookup("approve").NoOptDefVal = noOptSigil
-	prCmd.Flags().Lookup("request-changes").NoOptDefVal = noOptSigil
-	prCmd.Flags().Lookup("comment").NoOptDefVal = noOptSigil
+	prReviewCmd.Flags().Lookup("approve").NoOptDefVal = noOptSigil
+	prReviewCmd.Flags().Lookup("request-changes").NoOptDefVal = noOptSigil
+	prReviewCmd.Flags().Lookup("comment").NoOptDefVal = noOptSigil
 }
 
 var prReviewCmd = &cobra.Command{
-	Use:   "TODO",
+	Use:   "review",
 	Short: "TODO",
+	Args:  cobra.MaximumNArgs(1),
 	Long:  "TODO",
 	RunE:  prReview,
 }
@@ -63,7 +64,7 @@ func prReview(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	validationErr := errors.New("need exactly on of approve, request-changes, or comment")
+	validationErr := errors.New("need exactly one of approve, request-changes, or comment")
 	if stringsEqual(noOptSigil, approveVal, requestChangesVal, commentVal) {
 		return validationErr
 	}
@@ -72,6 +73,7 @@ func prReview(cmd *cobra.Command, args []string) error {
 		return validationErr
 	}
 
+	// TODO process PR arg
 	// TODO process flags, make some decisions
 
 	return nil
