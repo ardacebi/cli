@@ -2,6 +2,7 @@ package command
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -51,6 +52,39 @@ func oneEqual(target string, ss ...string) bool {
 }
 
 func prReview(cmd *cobra.Command, args []string) error {
+	ctx := contextForCommand(cmd)
+	baseRepo, err := determineBaseRepo(cmd, ctx)
+	if err != nil {
+		return fmt.Errorf("could not determine base repo: %w", err)
+	}
+
+	apiClient, err := apiClientForContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	prArg := ""
+
+	// determine PR
+	if len(args) == 0 {
+		prNum, _, err := prSelectorForCurrentBranch(ctx, baseRepo)
+		if err != nil && err.Error() != "git: not on any branch" {
+			return fmt.Errorf("could not query for pull request for current branch: %w", err)
+		}
+		prArg = fmt.Sprintf("%d", prNum)
+	} else {
+		if prNum, repo := prFromURL(args[0]); repo != nil {
+			prArg = prNum
+			baseRepo = repo
+		}
+	}
+
+	pr, err := prFromArg(apiClient, baseRepo, prArg)
+	if err != nil {
+		return fmt.Errorf("could not find pull request %d: %w", pr.Number, err)
+	}
+
+	// process PR action
 	approveVal, err := cmd.Flags().GetString("approve")
 	if err != nil {
 		return err
@@ -73,7 +107,6 @@ func prReview(cmd *cobra.Command, args []string) error {
 		return validationErr
 	}
 
-	// TODO process PR arg
 	// TODO process flags, make some decisions
 
 	return nil
