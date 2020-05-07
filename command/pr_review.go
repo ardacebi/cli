@@ -3,6 +3,8 @@ package command
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/cli/cli/api"
 	"github.com/spf13/cobra"
@@ -32,15 +34,6 @@ var prReviewCmd = &cobra.Command{
 	RunE:  prReview,
 }
 
-func stringsEqual(target string, ss ...string) bool {
-	for _, s := range ss {
-		if s != target {
-			return false
-		}
-	}
-	return true
-}
-
 func processReviewOpt(cmd *cobra.Command) (*api.PullRequestReviewInput, error) {
 	approveVal, err := cmd.Flags().GetString("approve")
 	if err != nil {
@@ -59,15 +52,23 @@ func processReviewOpt(cmd *cobra.Command) (*api.PullRequestReviewInput, error) {
 	var body string
 	var state api.PullRequestReviewState
 
+	// TODO NOT GETTING THE HIDEOUS SIGIL, why is that?
+	fmt.Println(approveVal)
+	fmt.Println(changesVal)
+	fmt.Println(commentVal)
+
 	if approveVal != noOptSigil {
+		fmt.Println("1")
 		found++
 		body = approveVal
 		state = api.ReviewApprove
 	} else if changesVal != noOptSigil {
+		fmt.Println("2")
 		found++
 		body = changesVal
 		state = api.ReviewRequestChanges
 	} else if commentVal != noOptSigil {
+		fmt.Println("3")
 		found++
 		body = commentVal
 		state = api.ReviewComment
@@ -108,12 +109,19 @@ func prReview(cmd *cobra.Command, args []string) error {
 		if prNum, repo := prFromURL(args[0]); repo != nil {
 			prArg = prNum
 			baseRepo = repo
+		} else {
+			prArg = strings.TrimPrefix(args[0], "#")
 		}
 	}
 
-	pr, err := prFromArg(apiClient, baseRepo, prArg)
+	prNum, err := strconv.Atoi(prArg)
 	if err != nil {
-		return fmt.Errorf("could not find pull request %d: %w", pr.Number, err)
+		return fmt.Errorf("could not parse pull request number: %w", prNum)
+	}
+
+	pr, err := api.PullRequestByNumber(apiClient, baseRepo, prNum)
+	if err != nil {
+		return fmt.Errorf("could not find pull request: %w", err)
 	}
 
 	input, err := processReviewOpt(cmd)

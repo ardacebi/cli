@@ -9,7 +9,6 @@ import (
 	"github.com/shurcooL/githubv4"
 
 	"github.com/cli/cli/internal/ghrepo"
-	"github.com/shurcooL/githubv4"
 )
 
 type PullRequestReviewState int
@@ -611,12 +610,31 @@ func CreatePullRequest(client *Client, repo *Repository, params map[string]inter
 func AddReview(client *Client, pr *PullRequest, input *PullRequestReviewInput) error {
 	var mutation struct {
 		AddPullRequestReview struct {
-			body          githubv4.String
-			event         githubv4.PullRequestReviewEvent
-			pullRequestID githubv4.ID
-		} `graphql: "addPullRequestReview(input:$input)"`
+			ClientMutationID string
+		} `graphql:"addPullRequestReview(input:$input)"`
 	}
-	return nil
+
+	state := githubv4.PullRequestReviewEventComment
+	switch input.State {
+	case ReviewApprove:
+		state = githubv4.PullRequestReviewEventApprove
+	case ReviewRequestChanges:
+		state = githubv4.PullRequestReviewEventRequestChanges
+	}
+
+	fmt.Println(state)
+
+	body := githubv4.String(input.Body)
+
+	gqlInput := githubv4.AddPullRequestReviewInput{
+		PullRequestID: pr.ID,
+		Event:         &state,
+		Body:          &body,
+	}
+
+	v4 := githubv4.NewClient(client.http)
+
+	return v4.Mutate(context.Background(), &mutation, gqlInput, nil)
 }
 
 func PullRequestList(client *Client, vars map[string]interface{}, limit int) (*PullRequestAndTotalCount, error) {
