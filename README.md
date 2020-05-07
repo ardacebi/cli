@@ -127,9 +127,11 @@ $ yay -S github-cli
 
 ### NixOS
 
-NixOS users can install from the Nix package manager.
+NixOS users can install from the [Nix package manager](https://nixos.org/nixos/packages.html?attr=gitAndTools.gh&channel=nixos-20.03&page=2).
 
-1. `nix-env -iA nixos.gitAndTools.gh`
+```
+nix-env -iA nixos.gitAndTools.gh
+```
 
 ### Other platforms
 
