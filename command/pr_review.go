@@ -62,12 +62,14 @@ func processReviewOpt(cmd *cobra.Command) (*api.PullRequestReviewInput, error) {
 		found++
 		body = approveVal
 		state = api.ReviewApprove
-	} else if changesVal != noOptSigil {
+	}
+	if changesVal != noOptSigil {
 		fmt.Println("2")
 		found++
 		body = changesVal
 		state = api.ReviewRequestChanges
-	} else if commentVal != noOptSigil {
+	}
+	if commentVal != noOptSigil {
 		fmt.Println("3")
 		found++
 		body = commentVal
