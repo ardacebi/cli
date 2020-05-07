@@ -125,6 +125,12 @@ Arch Linux users can install from the AUR: https://aur.archlinux.org/packages/gi
 $ yay -S github-cli
 ```
 
+### NixOS
+
+NixOS users can install from the Nix package manager.
+
+1. `nix-env -iA nixos.gitAndTools.gh`
+
 ### Other platforms
 
 Install a prebuilt binary from the [releases page][]
